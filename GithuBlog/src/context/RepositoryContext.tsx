@@ -27,6 +27,7 @@ interface RepositoryContextType {
   issues: Issue[];
   loading: boolean;
   error: string | null;
+  searchIssues: (searchText: string) => Promise<void>;
 }
 
 const RepositoryContext = createContext<RepositoryContextType | undefined>(undefined);
@@ -50,26 +51,42 @@ export const RepositoryProvider: React.FC<RepositoryProviderProps> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [userResponse, issuesResponse] = await Promise.all([
-          axios.get<UserData>("https://api.github.com/users/albertallan-rar"),
-          axios.get<Issue[]>("https://api.github.com/repos/albertallan-rar/Github-Blog-Desafio/issues"),
-        ]);
-
-        setUserData(userResponse.data);
-        setIssues(issuesResponse.data);
-        setLoading(false);
-      } catch (err) {
-        setError("Erro ao buscar dados do usuário ou issues");
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchInitialData();
   }, []);
 
+  const fetchInitialData = async () => {
+    try {
+      const [userResponse, issuesResponse] = await Promise.all([
+        axios.get<UserData>("https://api.github.com/users/albertallan-rar"),
+        axios.get<Issue[]>("https://api.github.com/repos/albertallan-rar/Github-Blog-Desafio/issues"),
+      ]);
+
+      setUserData(userResponse.data);
+      setIssues(issuesResponse.data);
+      setLoading(false);
+    } catch (err) {
+      setError("Erro ao buscar dados do usuário ou issues");
+      setLoading(false);
+    }
+  };
+
+  const searchIssues = async (searchText: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const query = encodeURIComponent(`${searchText} repo:albertallan-rar/Github-Blog-Desafio`);
+      const response = await axios.get<{ items: Issue[] }>(`https://api.github.com/search/issues?q=${query}`);
+      setIssues(response.data.items);
+    } catch (err) {
+      setError("Erro ao pesquisar issues");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <RepositoryContext.Provider value={{ userData, issues, loading, error }}>{children}</RepositoryContext.Provider>
+    <RepositoryContext.Provider value={{ userData, issues, loading, error, searchIssues }}>
+      {children}
+    </RepositoryContext.Provider>
   );
 };
