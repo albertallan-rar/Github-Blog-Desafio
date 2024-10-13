@@ -20,6 +20,15 @@ interface Issue {
   user: {
     login: string;
   };
+  comments: number;
+}
+
+interface FullIssue extends Issue {
+  comments: number;
+  user: {
+    login: string;
+    avatar_url: string;
+  };
 }
 
 interface RepositoryContextType {
@@ -28,6 +37,8 @@ interface RepositoryContextType {
   loading: boolean;
   error: string | null;
   searchIssues: (searchText: string) => Promise<void>;
+  selectedIssue: FullIssue | null;
+  fetchIssueDetails: (issueNumber: number) => Promise<void>;
 }
 
 const RepositoryContext = createContext<RepositoryContextType | undefined>(undefined);
@@ -49,6 +60,7 @@ export const RepositoryProvider: React.FC<RepositoryProviderProps> = ({ children
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<FullIssue | null>(null);
 
   useEffect(() => {
     fetchInitialData();
@@ -84,8 +96,33 @@ export const RepositoryProvider: React.FC<RepositoryProviderProps> = ({ children
     }
   };
 
+  const fetchIssueDetails = async (issueNumber: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get<FullIssue>(
+        `https://api.github.com/repos/albertallan-rar/Github-Blog-Desafio/issues/${issueNumber}`,
+      );
+      setSelectedIssue(response.data);
+    } catch (err) {
+      setError("Erro ao buscar detalhes da issue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <RepositoryContext.Provider value={{ userData, issues, loading, error, searchIssues }}>
+    <RepositoryContext.Provider
+      value={{
+        userData,
+        issues,
+        loading,
+        error,
+        searchIssues,
+        selectedIssue,
+        fetchIssueDetails,
+      }}
+    >
       {children}
     </RepositoryContext.Provider>
   );

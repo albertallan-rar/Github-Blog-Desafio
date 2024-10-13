@@ -28,7 +28,13 @@ export function Content() {
           <p>Carregando...</p>
         ) : issues.length > 0 ? (
           issues.map((issue) => (
-            <Card key={issue.id} title={issue.title} description={issue.body} created_at={issue.created_at} />
+            <Card
+              key={issue.id}
+              id={issue.number}
+              title={issue.title}
+              description={issue.body}
+              created_at={issue.created_at}
+            />
           ))
         ) : (
           <p>Nenhuma publicação encontrada</p>
